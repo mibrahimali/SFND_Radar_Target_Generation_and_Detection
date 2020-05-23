@@ -37,17 +37,20 @@ For every iteration sum the signal level within all the training cells. To sum c
 
 ```Matlab
 signal = RDM;
-for i = 1:(Nr/2-(Gr+Tr+1))
-    for j = 1:(Nd-(Gd+Td+1))
+for i = Gr+Tr+1:(Nr/2-(Gr+Tr))
+    for j = Gd+Td+1:(Nd-(Gd+Td))
         %Measure the noise across the Training Cells
-        for r = i:i+Tr-1
-            for d = j:j+Td-1
+        for r = i-Tr-Gr:i+Tr+Gr
+            for d = j-Td-Gd:j+Td+Gd
+                if(abs(r-i) <= Gr &&  abs(d-j) <= Gd)
+                   continue;
+                end
                 noise_level=noise_level + db2pow(RDM(r,d));
             end
         end
-        threshold = pow2db(noise_level/(Td*Tr))+offset;
-        cut_x = i+Tr+Gr+1;
-        cut_y = j+Td+Gd+1;
+        threshold = pow2db(noise_level/(Td*Tr -Gr*Gd))+offset;
+        cut_x = i;
+        cut_y = j;
         signal_T=RDM(cut_x,cut_y);
         if(signal_T<threshold)
             signal(cut_x,cut_y)=0;
@@ -61,8 +64,10 @@ end
 * The process above will generate a thresholded block, which is smaller than the Range Doppler Map as the CUTs cannot be located at the edges of the matrix due to the presence of Target and Guard cells. Hence, those cells will not be thresholded.
 To keep the map size same as it was before CFAR, equate all the non-thresholded cells to 0.
 ```Matlab
-signal(:,1:Td+Gd+1)=0;
-signal(1:(Tr+Gr+1),:)=0;
+signal(:,1:Td+Gd+1) = 0;
+signal(:,end-(Td+Gd+1):end) = 0;
+signal(1:(Gr+Tr+1),:) = 0;
+signal(end- (Gr+Tr+1):end,:) = 0;
 ```
 
 * The output of the CFAR algorthim is then used for Target detections clustering and tracking
