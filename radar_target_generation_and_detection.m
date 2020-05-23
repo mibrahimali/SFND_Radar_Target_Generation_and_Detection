@@ -179,17 +179,20 @@ noise_level = zeros(1,1);
 % CFAR
 
 signal = RDM;
-for i = 1:(Nr/2-(Gr+Tr+1))
-    for j = 1:(Nd-(Gd+Td+1))
+for i = Gr+Tr+1:(Nr/2-(Gr+Tr))
+    for j = Gd+Td+1:(Nd-(Gd+Td))
         %Measure the noise across the Training Cells
-        for r = i:i+Tr-1
-            for d = j:j+Td-1
+        for r = i-Tr-Gr:i+Tr+Gr
+            for d = j-Td-Gd:j+Td+Gd
+                if(abs(r-i) <= Gr &&  abs(d-j) <= Gd)
+                   continue;
+                end
                 noise_level=noise_level + db2pow(RDM(r,d));
             end
         end
-        threshold = pow2db(noise_level/(Td*Tr))+offset;
-        cut_x = i+Tr+Gr+1;
-        cut_y = j+Td+Gd+1;
+        threshold = pow2db(noise_level/(Td*Tr -Gr*Gd))+offset;
+        cut_x = i;
+        cut_y = j;
         signal_T=RDM(cut_x,cut_y);
         if(signal_T<threshold)
             signal(cut_x,cut_y)=0;
@@ -206,8 +209,10 @@ end
 %matrix. Hence,few cells will not be thresholded. To keep the map size same
 % set those values to 0. 
  
-signal(:,1:Td+Gd+1)=0;
-signal(1:(Tr+Gr+1),:)=0;
+signal(:,1:Td+Gd+1) = 0;
+signal(:,end-(Td+Gd+1):end) = 0;
+signal(1:(Gr+Tr+1),:) = 0;
+signal(end- (Gr+Tr+1):end,:) = 0;
 
 % *%TODO* :
 %display the CFAR output using the Surf function like we did for Range
@@ -215,7 +220,3 @@ signal(1:(Tr+Gr+1),:)=0;
 
 figure,surf(doppler_axis,range_axis,signal);
 colorbar;
-
-
- 
- 
